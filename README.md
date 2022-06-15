@@ -1,8 +1,5 @@
 # TransDARC (ReadME in progress)
 
-## Backbone Training
-
-
 
 ## Extract and save features
 Please first train the video feature extraction backbone from video swin transformer in mmaction2 repo using drive and act dataset
