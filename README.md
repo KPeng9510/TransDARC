@@ -96,6 +96,7 @@ test_pipeline = [
     
 ]
 
+PLease average the clips output at the top of video swin transformer
 
 ## Evaluate our distribution calibration
 
