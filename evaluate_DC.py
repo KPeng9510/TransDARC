@@ -15,6 +15,7 @@ from torchvision import datasets
 from torch.utils.data import DataLoader
 import random
 SEED = 42
+
 random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
@@ -22,11 +23,12 @@ torch.cuda.manual_seed_all(SEED)
 np.random.seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-
+from sklearn.metrics import confusion_matrix
 
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
-
+global nc
+nc = 34
 # helpers
 
 def pair(t):
@@ -84,140 +86,25 @@ class Attention(nn.Module):
         out = rearrange(out, 'b h n d -> b n (h d)')
         return self.to_out(out)
 
-class Transformer(nn.Module):
-    def __init__(self, dim=1024, depth=6, heads=8, dim_head=64, mlp_dim=2048, dropout = 0.1):
-        super().__init__()
-        self.layers = nn.ModuleList([])
-        for _ in range(depth):
-            self.layers.append(nn.ModuleList([
-                PreNorm(dim, Attention(dim, heads = heads, dim_head = dim_head, dropout = dropout)),
-                PreNorm(dim, FeedForward(dim, mlp_dim, dropout = dropout))
-            ]))
-        self.fc = nn.Linear(1024,34)
-    def forward(self, x,y):
-        x = x.float().unsqueeze(1)
-        for attn, ff in self.layers:
-            x = attn(x) + x
-            x = ff(x) + x
-        return self.fc(x).squeeze(),y
-class Generator(nn.Module):
-    def __init__(self):
-        super(Generator, self).__init__()
 
-        def block(in_feat, out_feat, normalize=True):
-            layers = [nn.Linear(in_feat, out_feat)]
-            if normalize:
-                layers.append(nn.BatchNorm1d(out_feat, 0.8))
-            layers.append(nn.LeakyReLU(0.2, inplace=True))
-            return layers
-
-        self.model = nn.Sequential(
-            *block(1024, 128, normalize=False),
-            *block(128, 256),
-            *block(256, 512),
-            *block(512, 1024),
-            nn.Linear(1024, 1024),
-            nn.Tanh()
-        )
-
-    def forward(self, z):
-        img = self.model(z)
-        #img = img.view(img.size(0), *img_shape)
-        return img
-class Discriminator(nn.Module):
-    def __init__(self):
-        super(Discriminator, self).__init__()
-
-        self.model = nn.Sequential(
-            nn.Linear(1024, 512),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Linear(512, 256),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Linear(256, 1),
-            nn.Sigmoid(),
-        )
-
-    def forward(self, img):
-        validity = self.model(img)
-        return validity
-
-
-def train_GAN(dataloader):
-    # Loss function
-    adversarial_loss = torch.nn.BCELoss()
-    # Initialize generator and discriminator
-    generator = Generator()
-    discriminator = Discriminator()
-    if cuda:
-        generator.cuda()
-        discriminator.cuda()
-        adversarial_loss.cuda()
-    optimizer_G = torch.optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
-    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
-    Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
-    # ----------
-    #  Training
-    # ----------
-    for epoch in range(64):
-        for i, (imgs, _) in enumerate(dataloader):
-            # Adversarial ground truths
-            valid = Variable(Tensor(imgs.size(0), 1).fill_(1.0), requires_grad=False)
-            fake = Variable(Tensor(imgs.size(0), 1).fill_(0.0), requires_grad=False)
-            # Configure input
-            real_imgs = Variable(imgs.type(Tensor))
-            # -----------------
-            #  Train Generator
-            # -----------------
-            optimizer_G.zero_grad()
-            # Sample noise as generator input
-            z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], 1024))))
-            # Generate a batch of images
-            gen_imgs = generator(z)
-            # Loss measures generator's ability to fool the discriminator
-            g_loss = adversarial_loss(discriminator(gen_imgs), valid)
-            g_loss.backward()
-            optimizer_G.step()
-            # ---------------------
-            #  Train Discriminator
-            # ---------------------
-            optimizer_D.zero_grad()
-            # Measure discriminator's ability to classify real from generated samples
-            real_loss = adversarial_loss(discriminator(real_imgs), valid)
-            fake_loss = adversarial_loss(discriminator(gen_imgs.detach()), fake)
-            d_loss = (real_loss + fake_loss) / 2
-
-            d_loss.backward()
-            optimizer_D.step()
-
-            print(
-                "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-                % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
-            )
-
-            #batches_done = epoch * len(dataloader) + i
-            #if batches_done % opt.sample_interval == 0:
-            #    save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
-    return generator
-
-
-
-
-def random_feature_interpolation(selected_mean, query, k):
+def random_feature_interpolation(selected_mean, query, k, num):
     num_q = query.shape[0]
+    #print(num_q)
     num_base = selected_mean.shape[0]
-    origin = np.random.choice(num_q, 1000)
-    target = np.random.choice(num_base, 1000)
-    alpha = np.stack([np.random.rand(1000)]*1024, axis=-1)*0.07
-    print(query[origin].shape,selected_mean[target].shape)
+    origin = np.random.choice(num_q, num)
+    target = np.random.choice(num_base, num)
+    alpha = np.stack([np.random.rand(num)]*1024, axis=-1)*0.07
+    #print(query[origin].shape,selected_mean[target].shape)
     generated_feature = query[origin,:] + alpha*selected_mean[target,:]
     #print(generated_feature.shape)
     #sys.exit()
     return generated_feature
 
-def distribution_calibration(query, base_means, base_cov, k,alpha=0.21):
+def distribution_calibration(query, base_means, base_cov, k,alpha, num):
     query = query.numpy()
     dist = []
-    k=3
+    k=1
+    alpha=0.21
     #print(query.shape)
     for i in range(len(base_means)):
         dist.append(np.linalg.norm(query-base_means[i]))
@@ -230,7 +117,7 @@ def distribution_calibration(query, base_means, base_cov, k,alpha=0.21):
     #mean = np.squeeze(query[np.newaxis, :])
     calibrated_mean = np.mean(mean, axis=0)
     calibrated_cov = np.mean(np.array(base_cov)[index], axis=0)+alpha
-    samples = random_feature_interpolation(selected_mean,query,k)
+    samples = random_feature_interpolation(selected_mean,query,k, num)
     #print(calibrated_mean)
     #print(calibrated_cov)
     #feature interpolation based feature augmentation
@@ -263,57 +150,33 @@ class Net(nn.Module):
         #self.conv2 = nn.Conv2d(6, 16, 5)
         # self.fc1 = nn.Linear(16 * 5 * 5, 120)
         # self.fc2 = nn.Linear(120, 84)
-        self.fc2 = nn.Linear(256, 34)
-        self.fc3=nn.Linear(1024,34)
+        self.fc2 = nn.Linear(256,nc)
+        self.fc3=nn.Linear(1024,nc)
 
     def forward(self, x,y):
         y = y.float()
         x=self.fc1(x.float())
         att = self.softmax(self.attention2(self.relu(self.attention(x))))
-        return self.fc2(self.relu(self.dropout(x+att*x))), self.fc3(y)
+        return self.fc2(self.relu(self.dropout(x+att*x))),self.fc3(y),
+
 def calculate_samples_per_class(annotation):
-    class_index_max = 34
+    class_index_max = nc
     #print(annotation)
     number_per_class = torch.zeros(int(class_index_max))
     for i in range(class_index_max):
          number_per_class[i] = (annotation == i).sum()
     return number_per_class
 def calculate_weights(annotation, weights):
-    class_index_max = 34
+    class_index_max = nc
     #number_per_class = torch.zeros(class_index_max)
     sampler_weight = torch.zeros_like(annotation)
     for i in range(class_index_max):
         mask= annotation == i
         sampler_weight[mask] = weights[i]
     return sampler_weight
-if __name__ == '__main__':
-    # ---- data loading
-    n_runs = 10000
-    import FSLTask
-    import torch.optim as optim
-
-
-
-    rare_data, rare_classes, rich_data, rich_classes, feature_val, annotation_val, feature_test, annotation_test, sample_num_per_class = load_dataset_driveact()
-    #acc = sklearn.metrics.top_k_accuracy_score(annotation_val, np.squeeze(feature_val), k=1)
-    #noise_mean = np.zeros(34, 1024)
-
-    #print(len(rare_data)+len(rich_data))
-    #print(len(annotation_test))
-    #sys.exit()
-    #print(len(annotation_test))
-    #length= rare_classes.shape[0]+rich_data.shape[]
-    #cfg = {'shot': n_shot, 'ways': n_ways, 'queries': n_queries}
-    #FSLTask.loadDataSet(dataset)
-    #FSLTask.setRandomStates(cfg)
-    #rich_datas, rare_data = FSLTask.GenerateRunSet(end=n_runs, cfg=cfg)
-    #ndatas = ndatas.permute(0, 2, 1, 3).reshape(n_runs, n_samples, -1)
-    #labels = torch.arange(n_ways).view(1, 1, n_ways).expand(n_runs, n_shot + n_queries, 5).clone().view(n_runs,                                                                                        n_samples)
-    # ---- Base class statistics
+def generate_train(rare_data, rare_classes, rich_data, rich_classes,sample_num_per_class):
     base_means = []
     base_cov = []
-    #base_features_path = "./checkpoints/%s/WideResNet28_10_S2M2_R/last/base_features.plk"%dataset
-
     for key in range(len(rich_data)):
         feature = np.array(rich_data[key])
         print(feature.shape)
@@ -339,11 +202,17 @@ if __name__ == '__main__':
     sampled_label = []
     count = 0
     np.set_printoptions(threshold=sys.maxsize)
-
+    #for i in range(len(rare_classes)):
+    #    print(rare_data[i].shape)
     for i in range(len(rare_classes)):
+        print(sample_num_per_class[i])
+
+        #if sample_num_per_class[rare_classes[i]] == 0:
+        #    continue
         num_sampled = 1000 #(int(torch.max(sample_num_per_class) - sample_num_per_class[rare_classes[i]]))
         count += num_sampled
-        mean, cov, samples = distribution_calibration(rare_data[i], base_means, base_cov, k=2)
+        #print(rare_data[i].shape)
+        mean, cov, samples = distribution_calibration(rare_data[i], base_means, base_cov, 2, 0.21, 1000)
         #print(num_sampled)
         #print(samples.shape)
         #print(cov)
@@ -364,8 +233,8 @@ if __name__ == '__main__':
     for i in range(len(rare_classes)):
         rare_label.extend([rare_classes[i]] * int(sample_num_per_class[rare_classes[i]]))
     rare_label = np.array(rare_label)
-    X_aug_1 = sampled_data#np.concatenate([rare_data, sampled_data])
-    Y_aug_1 = sampled_label#np.concatenate([rare_label,sampled_label])
+    X_aug_1 = sampled_data #np.concatenate([rare_data, sampled_data])
+    Y_aug_1 = sampled_label #np.concatenate([rare_label,sampled_label])
     #print(X_aug_1.shape)
     #print(Y_aug_1.shape)
 
@@ -383,7 +252,7 @@ if __name__ == '__main__':
         #print(rich_classes[i])
         #mean, conv, samples = base_means[i], base_cov[i]
         #print(samples.shape)
-        mean, cov, samples = distribution_calibration(rich_data[i], base_means, base_cov, k=2)
+        mean, cov, samples = distribution_calibration(rich_data[i], base_means, base_cov, 2, 0.21, 1000)
         #sampled_data.append(np.random.multivariate_normal(mean=mean, cov=cov, size=num_sampled))
         sampled_data.append(samples)
         sampled_label.extend([rich_classes[i]] * num_sampled)
@@ -394,14 +263,46 @@ if __name__ == '__main__':
         rich_label.extend([rich_classes[i]] * int(sample_num_per_class[rich_classes[i]]))
     rare_label = np.array(rich_label)
     rich_data = np.concatenate(rich_data, axis=0)
-    X_aug_2 = sampled_data#np.concatenate([rich_data, sampled_data])
-    Y_aug_2 = sampled_label#np.concatenate([rich_label,sampled_label])
+    X_aug_2 = sampled_data #rich_data #sampled_data #np.concatenate([rich_data, sampled_data])
+    Y_aug_2 = sampled_label #rich_label#sampled_label #np.concatenate([rich_label,sampled_label])
     X_aug = np.concatenate([X_aug_1, X_aug_2])
     Y_aug = np.concatenate([Y_aug_1, Y_aug_2])
     #X_aug += np.random.normal(0, .1, X_aug.shape)
+    return X_aug, Y_aug
+
+if __name__ == '__main__':
+    # ---- data loading
+    n_runs = 10000
+    import FSLTask
+    import torch.optim as optim
 
 
+
+    rare_data, rare_classes, rich_data, rich_classes, feature_val, annotation_val, feature_test, annotation_test, sample_num_per_class,rare_data_aug, rare_classes_aug, rich_data_aug, rich_classes_aug,sample_num_per_class_aug = load_dataset_driveact()
+    #acc = sklearn.metrics.top_k_accuracy_score(annotation_test, np.squeeze(feature_test), k=1)
+    #print(acc)
+    #noise_mean = np.zeros(34, 1024)
+
+    #print(len(rare_data)+len(rich_data))
+    #print(len(annotation_test))
+    #sys.exit()
+    #print(len(annotation_test))
+    #length= rare_classes.shape[0]+rich_data.shape[]
+    #cfg = {'shot': n_shot, 'ways': n_ways, 'queries': n_queries}
+    #FSLTask.loadDataSet(dataset)
+    #FSLTask.setRandomStates(cfg)
+    #rich_datas, rare_data = FSLTask.GenerateRunSet(end=n_runs, cfg=cfg)
+    #ndatas = ndatas.permute(0, 2, 1, 3).reshape(n_runs, n_samples, -1)
+    #labels = torch.arange(n_ways).view(1, 1, n_ways).expand(n_runs, n_shot + n_queries, 5).clone().view(n_runs,                                                                                        n_samples)
+    # ---- Base class statistics
+
+    #base_features_path = "./checkpoints/%s/WideResNet28_10_S2M2_R/last/base_features.plk"%dataset
+
+    X_aug, Y_aug = generate_train(rare_data,rare_classes,rich_data,rich_classes,sample_num_per_class)
+    X_aug2, Y_aug2 = generate_train(rare_data_aug,rare_classes_aug,rich_data_aug,rich_classes_aug,sample_num_per_class_aug)
     #print(torch.Tensor(Y_aug))
+    X_aug = np.concatenate([X_aug, X_aug2])
+    Y_aug = np.concatenate([Y_aug, Y_aug2])
     sample_number = calculate_samples_per_class(torch.Tensor(Y_aug))
     #print(sample_number)
     weights = 1/sample_number
@@ -412,8 +313,9 @@ if __name__ == '__main__':
     #print(X_aug.shape)
     #if mode == 'train':
     #  samples_weight = torch.from_numpy(np.array([weight[t] for t in dataset.gt_labels]))
-    print(sampler_weight)
+    #print(sampler_weight)
     sampler = torch.utils.data.sampler.WeightedRandomSampler(sampler_weight,3000)
+
 
     dataset_train = CustomImageDataset(X_aug, Y_aug)
     #train_GAN(DataLoader(dataset_train, batch_size=256, sampler=sampler))
@@ -423,6 +325,8 @@ if __name__ == '__main__':
 
 
     train_dataloader = DataLoader(dataset_train, batch_size=256, sampler=sampler)
+
+
     infer_dataloader = DataLoader(dataset_train, batch_size=256, shuffle=False)
     test_dataloader = DataLoader(dataset_test, batch_size=64, shuffle=False)
     val_dataloader = DataLoader(dataset_val, batch_size=64, shuffle=False)
@@ -442,7 +346,7 @@ if __name__ == '__main__':
     #optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
     #scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0000993, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.000993, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
     #optimizer = torch.optim.SGD(model.parameters(), 0.001,
     #                            momentum=0.9,
     #                            weight_decay=0.01)
@@ -451,7 +355,7 @@ if __name__ == '__main__':
     #print(np.min(Y_aug))
     #sys.exit()
     #criterion2 = torch.nn.CosineEmbeddingLoss(margin=0.0, size_average=None, reduce=False,)
-    for epoch in range(1500):
+    for epoch in range(3000):
         hard_samples = []
         model.train()
         for step, (data,label) in enumerate(train_dataloader):
@@ -481,7 +385,7 @@ if __name__ == '__main__':
             hard_dataset = CustomImageDataset(hard_set, hard_label)
 
             hard_train_dataloader = DataLoader(hard_dataset, batch_size=256, shuffle=True)
-            for sub_epoch in range(10):
+            for sub_epoch in range(1):
                 model.train()
                 for step, (data,label) in enumerate(hard_train_dataloader):
                     optimizer.zero_grad()
@@ -497,6 +401,8 @@ if __name__ == '__main__':
     model.eval()
     for step, (data,label) in enumerate(val_dataloader):
         with torch.no_grad():
+            #data = torch.nn.functional.normalize(data, dim=-1)
+
             predicts,y = model(data.cuda(), data.cuda())
             val_predict.append(predicts.cpu())
     val_predict = torch.cat(val_predict, dim=0).cpu().numpy()
@@ -504,24 +410,85 @@ if __name__ == '__main__':
     #val_predict = np.argmax(val_predict, axis=-1)
     #print(predicts)
     acc = sklearn.metrics.top_k_accuracy_score(annotation_val, val_predict, k=1)
+    f = open('/cvhci/data/activity/kpeng/ts_val_midlevel_predict_split0.pkl', 'wb')
+    pickle.dump(val_predict,f)
+    f.close()
+    f = open('/cvhci/data/activity/kpeng/ts_val_midlevel_label_split0.pkl', 'wb')
+    pickle.dump(annotation_val,f)
+    f.close()
     print('two-stage calibration eval  ACC : %f'%acc)
     #predicts = model.predict(np.squeeze(feature_test))
+    cm = confusion_matrix(annotation_val, np.argmax(val_predict, axis=-1))
+    f = open("/cvhci/data/activity/Drive&Act/kunyu/annotation_list.pkl", 'rb')
+    annotation = []
+    class_index = pickle.load(f)
+    # We will store the results in a dictionary for easy access later
+    per_class_accuracies = {}
+    # Calculate the accuracy for each one of our classes
+    for idx, cls in enumerate(range(nc)):
+        # True negatives are all the samples that are not our current GT class (not the current row)
+        # and were not predicted as the current class (not the current column)
+        true_negatives = np.sum(np.delete(np.delete(cm, idx, axis=0), idx, axis=1))
+        # True positives are all the samples of our current GT class that were predicted as such
+        true_positives = cm[idx, idx]
+        # The accuracy for the current class is ratio between correct predictions to all predictions
+        per_class_accuracies[cls] = (true_positives + true_negatives) / np.sum(cm)
+        #print(class_index[idx], 'val_accuracy', per_class_accuracies[cls])
     model.eval()
+
+
     for step, (data,label) in enumerate(test_dataloader):
         with torch.no_grad():
+            data = torch.nn.functional.normalize(data, dim=-1)
             predicts,y = model(data.cuda(), data.cuda())
             test_predict.append(predicts.cpu())
     test_predict = torch.cat(test_predict, dim=0).cpu().numpy()
     #print(np.squeeze(feature_test).shape)
     #sys.exit()
     #predicts = model.predict(np.squeeze(feature_val))
-
     #predicts = np.argmax(predicts, axis=-1)
     #test_predict = np.argmax(test_predict, axis=-1)
     acc = sklearn.metrics.top_k_accuracy_score(annotation_test, test_predict, k=1)
-
+    f = open('/cvhci/data/activity/kpeng/ts_test_midlevel_predict_split0.pkl', 'wb')
+    pickle.dump(test_predict,f)
+    f.close()
+    f = open('/cvhci/data/activity/kpeng/ts_test_midlevel_label_split0.pkl', 'wb')
+    pickle.dump(annotation_test,f)
+    f.close()
     print('two-stage calibration test  ACC : %f' % acc)
+    #for i in range(34):
+    #    mask = annotation_test == i
+    #    acc = sklearn.metrics.top_k_accuracy_score(torch.argmax(annotation_test[mask], dim=-1), test_predict[mask], k=1)
+    #    print('class', class_index[i], 'accuracy:', acc)
     #filename = 'finalized_model.sav'
     #pickle.dump(model, open(filename, 'wb'))
+    # Get the confusion matrix
+    cm = confusion_matrix(annotation_test, np.argmax(test_predict, axis=-1))
+    # We will store the results in a dictionary for easy access later
+    per_class_accuracies = {}
+    # Calculate the accuracy for each one of our classes
+    for idx, cls in enumerate(range(nc)):
+        # True negatives are all the samples that are not our current GT class (not the current row)
+        # and were not predicted as the current class (not the current column)
+        true_negatives = np.sum(np.delete(np.delete(cm, idx, axis=0), idx, axis=1))
+        # True positives are all the samples of our current GT class that were predicted as such
+        true_positives = cm[idx, idx]
+        # The accuracy for the current class is ratio between correct predictions to all predictions
+        per_class_accuracies[cls] = (true_positives + true_negatives) / np.sum(cm)
+        #print(class_index[idx], 'test_accuracy', per_class_accuracies[cls])
+    cm = confusion_matrix(annotation_test, np.argmax(feature_test, axis=-1))
+    # We will store the results in a dictionary for easy access later
+    per_class_accuracies = {}
+    # Calculate the accuracy for each one of our classes
+    for idx, cls in enumerate(range(nc)):
+        # True negatives are all the samples that are not our current GT class (not the current row)
+        # and were not predicted as the current class (not the current column)
+        true_negatives = np.sum(np.delete(np.delete(cm, idx, axis=0), idx, axis=1))
+        # True positives are all the samples of our current GT class that were predicted as such
+        true_positives = cm[idx, idx]
+        # The accuracy for the current class is ratio between correct predictions to all predictions
+        per_class_accuracies[cls] = (true_positives + true_negatives) / np.sum(cm)
+        #print(class_index[idx], 'test_accuracy', per_class_accuracies[cls])
+
 
 
