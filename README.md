@@ -105,6 +105,7 @@ To evaluate our distribution calibration method, run:
 ```eval
 python evaluate_DC.py
 ```
+## Verification of our code
 
-
+The logits of Video Swin Base are available at https://drive.google.com/drive/folders/1MJY8toH3PSV--pA2EvL8qjPIjcaTdmvr?usp=sharing, which is for fine-grained level split 0 driver activity recognition. (notice that, the result reported in the paper is the mean average over three splits, i.e., split0, split1, and split2)
 
