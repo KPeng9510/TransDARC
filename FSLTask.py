@@ -5,12 +5,34 @@ import torch
 import sys
 from pprint import pprint
 # from tqdm import tqdm
-
+nc = 34
 # ========================================================
 #   Usefull paths
 _datasetFeaturesFiles = {"train": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_train.pkl",
+                         #"train": "/cvhci/data/activity/kpeng/logits_split1_chunk90_swin_base_last_logits768_last_augmentedtrain.pkl",
+                         #"train": "/cvhci/data/activity/kpeng/logits_split2_chunk90_swin_base_last_logits768_lasttrain.pkl",
+                         #"train": "/cvhci/data/activity/kpeng/task_level_logits_split0_chunk90_swin_base_last_logits768_lasttrain.pkl",
+                         #"train": "/cvhci/data/activity/kpeng/object_level_logits_split2_chunk90_swin_base_last_logits768_lasttrain.pkl",
+                         #"train": "/cvhci/data/activity/kpeng/location_level_logits_split1_chunk90_swin_base_last_logits768_lasttrain.pkl",
+                         "train_aug": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_last_augmentedtrain.pkl",
+                         #"train_aug": "/cvhci/data/activity/kpeng/logits_split1_chunk90_swin_base_last_logits768_lastaugmentedrealtrain.pkl",
+                         #"train_aug": "/cvhci/data/activity/kpeng/logits_split2_chunk90_swin_base_last_logits768_last_augmentedtrain.pkl",
+                         #"train_aug": "/cvhci/data/activity/kpeng/task_level_logits_split0_chunk90_swin_base_last_logits768_lastaugmentedtrain.pkl",
+                         #"train_aug": "/cvhci/data/activity/kpeng/object_level_logits_split2_chunk90_swin_base_last_logits768_lastaugmentedtrain.pkl",
+                         #"train_aug": "/cvhci/data/activity/kpeng/location_level_logits_split1_chunk90_swin_base_last_logits768_lastaugmentedtrain.pkl",
                          "eval": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_val.pkl",
-                         "test": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_test.pkl"}
+                         #"eval": "/cvhci/data/activity/kpeng/logits_split2_chunk90_swin_base_last_logits768_lastval.pkl",
+                         #"eval": "/cvhci/data/activity/kpeng/logits_split1_chunk90_swin_base_last_logits768_lastaugmentedval.pkl",
+                         #"eval": "/cvhci/data/activity/kpeng/task_level_logits_split0_chunk90_swin_base_last_logits768_lastval.pkl",
+                         #"test": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_last_ids2test.pkl",
+                         #"eval": "/cvhci/data/activity/kpeng/object_level_logits_split2_chunk90_swin_base_last_logits768_lastval.pkl",
+                         #"eval": "/cvhci/data/activity/kpeng/location_level_logits_split1_chunk90_swin_base_last_logits768_lastval.pkl",
+                         "test": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_test.pkl"
+                         #"test":  "/cvhci/data/activity/kpeng/logits_split1_chunk90_swin_base_last_logits768_lastaugmentedtest.pkl"
+                         #"test": "/cvhci/data/activity/kpeng/task_level_logits_split0_chunk90_swin_base_last_logits768_lasttest.pkl"
+                         #"test": "/cvhci/data/activity/kpeng/object_level_logits_split2_chunk90_swin_base_last_logits768_lasttest.pkl",
+                         #"test": "/cvhci/data/activity/kpeng/location_level_logits_split1_chunk90_swin_base_last_logits768_lasttest.pkl",
+                         }
 _cacheDir = "./cache"
 _maxRuns = 10000
 _min_examples = -1
@@ -24,24 +46,31 @@ _rsCfg = None
 
 
 def load_label_feature(item):
+    #f = open("/cvhci/data/activity/Drive&Act/kunyu/annotation_list.pkl", 'rb')
     f = open("/cvhci/data/activity/Drive&Act/kunyu/annotation_list.pkl", 'rb')
     annotation = []
     class_index = pickle.load(f)
+    print(class_index)
     f.close()
     infos = item.keys()
+    class_label = []
     for info in infos:
         info = ''.join([item[0] for item in list(info)])
         #print(info)
         activity = info.split(',')[-2]
+        if activity not in class_label:
+            class_label.append(activity)
+        #print(activity)
         label = class_index.index(activity)
         annotation.append(label)
     features = item.values()
     #print(features)
+    print(class_label)
     feature = [term for term in features]
     #print(feature)
     return feature, annotation
 
-def _load_pickle(file_train,file_eval,file_test):
+def _load_pickle(file_train,file_train_aug,file_eval,file_test):
     dataset = dict()
     with open(file_train, 'rb') as f:
         data = pickle.load(f)
@@ -52,6 +81,15 @@ def _load_pickle(file_train,file_eval,file_test):
         dataset['data_train'] = torch.FloatTensor(np.stack(feature, axis=0))
         #print(dataset['data_train'].size())
         dataset['labels_train'] = torch.LongTensor(np.stack(annotation, axis=0))
+    with open(file_train_aug, 'rb') as f:
+        data = pickle.load(f)
+        feature, annotation = load_label_feature(data)
+        # labels = [np.full(shape=len(data[key]), fill_value=key)
+        #          for key in data]
+        # data = [features for key in data for features in data[key]]
+        dataset['data_train_aug'] = torch.FloatTensor(np.stack(feature, axis=0))
+        # print(dataset['data_train'].size())
+        dataset['labels_train_aug'] = torch.LongTensor(np.stack(annotation, axis=0))
     with open(file_eval, 'rb') as f:
         data = pickle.load(f)
         feature, annotation = load_label_feature(data)
@@ -89,8 +127,8 @@ def arrange_dataset(data, annotation):
 def rare_class_selection(data, sam_number):
     #print(data.size())
     rare_class_threshold = 100
-    annotation = torch.arange(34)
-    #print(sam_number)
+    annotation = torch.arange(nc)
+    print(sam_number)
     rare_mask = (sam_number < rare_class_threshold).bool()
     rich_mask = sam_number >= rare_class_threshold
     rare_mask_list = [int(item) for item in annotation[rare_mask].tolist()]
@@ -107,20 +145,28 @@ def rare_class_selection(data, sam_number):
     return rare_data, rare_classes, rich_data, rich_classes
 def load_dataset_driveact():
     train_path = _datasetFeaturesFiles['train']
+    train_aug_path = _datasetFeaturesFiles['train_aug']
+
     val_path= _datasetFeaturesFiles['eval']
     test_path = _datasetFeaturesFiles['test']
     #load_train_dataset
 
-    dataset = _load_pickle(train_path, val_path, test_path)
+    dataset = _load_pickle(train_path,train_aug_path, val_path, test_path)
     feature_train = dataset['data_train']
     annotation_train = dataset['labels_train']
     feature_val, annotation_val = dataset['data_eval'], dataset['labels_eval']
     feature_test, annotation_test = dataset['data_test'], dataset['labels_test']
-    sample_per_class_train = calculate_samples_per_class(annotation_train)
+    feature_train_aug, annotation_train_aug = dataset['data_train_aug'], dataset['labels_train_aug']
+    #print(feature_train-feature_train_aug)
+    #sys.exit()
+    sample_per_class_train = calculate_samples_per_class(annotation_train_aug)
+    sample_per_class_train_aug = calculate_samples_per_class(annotation_train)
     arrange_dataset_train = arrange_dataset(feature_train, annotation_train)
+    arrange_dataset_train_aug = arrange_dataset(feature_train_aug, annotation_train_aug)
     rare_data, rare_classes, rich_data, rich_classes = rare_class_selection(arrange_dataset_train, sample_per_class_train)
+    rare_data_aug, rare_classes_aug, rich_data_aug, rich_classes_aug = rare_class_selection(arrange_dataset_train_aug, sample_per_class_train_aug)
 
-    return rare_data, rare_classes, rich_data, rich_classes, feature_val,annotation_val,feature_test, annotation_test, sample_per_class_train
+    return rare_data, rare_classes, rich_data, rich_classes, feature_val,annotation_val,feature_test, annotation_test, sample_per_class_train,rare_data_aug, rare_classes_aug, rich_data_aug, rich_classes_aug,sample_per_class_train_aug
 
 
 # =========================================================
