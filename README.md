@@ -22,10 +22,10 @@ train_pipeline = [
     dict(type='FormatShape', input_format='NCTHW'),
     
     
-    dict(type='Collect', keys=['imgs', 'label', 'fast_video1', 'fast_video2'], meta_keys=[]),
+    dict(type='Collect', keys=['imgs', 'label'], meta_keys=[]),
     
     
-    dict(type='ToTensor', keys=['imgs', 'label','fast_video1', 'fast_video2'])
+    dict(type='ToTensor', keys=['imgs', 'label'])
     
     
 ]
@@ -55,10 +55,10 @@ val_pipeline = [
     dict(type='FormatShape', input_format='NCTHW'),
     
     
-    dict(type='Collect', keys=['imgs', 'label', 'fast_video1', 'fast_video2'], meta_keys=[]),
+    dict(type='Collect', keys=['imgs', 'label'], meta_keys=[]),
     
     
-    dict(type='ToTensor', keys=['imgs', 'label', 'fast_video1', 'fast_video2'])
+    dict(type='ToTensor', keys=['imgs', 'label'])
     
     
 ]
@@ -88,10 +88,10 @@ test_pipeline = [
     dict(type='FormatShape', input_format='NCTHW'),
     
     
-    dict(type='Collect', keys=['imgs', 'label', 'fast_video1', 'fast_video2'], meta_keys=[]),
+    dict(type='Collect', keys=['imgs', 'label'], meta_keys=[]),
     
     
-    dict(type='ToTensor', keys=['imgs', 'label','fast_video1', 'fast_video2'])
+    dict(type='ToTensor', keys=['imgs', 'label'])
     
     
 ]
