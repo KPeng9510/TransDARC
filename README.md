@@ -109,3 +109,12 @@ python evaluate_DC.py
 
 The logits of Video Swin Base are available at https://drive.google.com/drive/folders/1MJY8toH3PSV--pA2EvL8qjPIjcaTdmvr?usp=sharing, which is for fine-grained level split 0 driver activity recognition. (notice that, the result reported in the paper is the mean average over three splits, i.e., split0, split1, and split2)
 
+
+## Please cite our paper once you are interested in it
+
+@article{peng2022transdarc,
+  title={TransDARC: Transformer-based Driver Activity Recognition with Latent Space Feature Calibration},
+  author={Peng, Kunyu and Roitberg, Alina and Yang, Kailun and Zhang, Jiaming and Stiefelhagen, Rainer},
+  journal={arXiv preprint arXiv:2203.00927},
+  year={2022}
+}
