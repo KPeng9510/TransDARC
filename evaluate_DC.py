@@ -429,10 +429,10 @@ if __name__ == '__main__':
 
     #model = LogisticRegression(max_iter=10000,verbose=10).fit(X=X_aug, y=Y_aug)
     model = Net()
-    resume = '/cvhci/temp/kpeng/driveact/models_swin_base/best_top1_acc_epoch_24.pth'
-    checkpoint = torch.load(resume)
-    print(checkpoint['state_dict']['cls_head.fc_cls.weight'])
-    print(checkpoint['state_dict']['cls_head.fc_cls.bias'])
+    #resume = '/cvhci/temp/kpeng/driveact/models_swin_base/best_top1_acc_epoch_24.pth'
+    #checkpoint = torch.load(resume)
+    #print(checkpoint['state_dict']['cls_head.fc_cls.weight'])
+    #print(checkpoint['state_dict']['cls_head.fc_cls.bias'])
     #model.fc1.weight.data = checkpoint['state_dict']['cls_head.fc_cls.weight']
     #model.fc1.bias.data = checkpoint['state_dict']['cls_head.fc_cls.bias']
     #sys.exit()
@@ -451,7 +451,7 @@ if __name__ == '__main__':
     #print(np.min(Y_aug))
     #sys.exit()
     #criterion2 = torch.nn.CosineEmbeddingLoss(margin=0.0, size_average=None, reduce=False,)
-    for epoch in range(400):
+    for epoch in range(1500):
         hard_samples = []
         model.train()
         for step, (data,label) in enumerate(train_dataloader):
