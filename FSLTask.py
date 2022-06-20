@@ -8,26 +8,26 @@ from pprint import pprint
 nc = 34
 # ========================================================
 #   Usefull paths
-_datasetFeaturesFiles = {"train": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_train.pkl",
+_datasetFeaturesFiles = {"train": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_last22train.pkl",
                          #"train": "/cvhci/data/activity/kpeng/logits_split1_chunk90_swin_base_last_logits768_last_augmentedtrain.pkl",
                          #"train": "/cvhci/data/activity/kpeng/logits_split2_chunk90_swin_base_last_logits768_lasttrain.pkl",
                          #"train": "/cvhci/data/activity/kpeng/task_level_logits_split0_chunk90_swin_base_last_logits768_lasttrain.pkl",
                          #"train": "/cvhci/data/activity/kpeng/object_level_logits_split2_chunk90_swin_base_last_logits768_lasttrain.pkl",
                          #"train": "/cvhci/data/activity/kpeng/location_level_logits_split1_chunk90_swin_base_last_logits768_lasttrain.pkl",
-                         "train_aug": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_last_augmentedtrain.pkl",
+                         "train_aug": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_last22augmentedtrain",
                          #"train_aug": "/cvhci/data/activity/kpeng/logits_split1_chunk90_swin_base_last_logits768_lastaugmentedrealtrain.pkl",
                          #"train_aug": "/cvhci/data/activity/kpeng/logits_split2_chunk90_swin_base_last_logits768_last_augmentedtrain.pkl",
                          #"train_aug": "/cvhci/data/activity/kpeng/task_level_logits_split0_chunk90_swin_base_last_logits768_lastaugmentedtrain.pkl",
                          #"train_aug": "/cvhci/data/activity/kpeng/object_level_logits_split2_chunk90_swin_base_last_logits768_lastaugmentedtrain.pkl",
                          #"train_aug": "/cvhci/data/activity/kpeng/location_level_logits_split1_chunk90_swin_base_last_logits768_lastaugmentedtrain.pkl",
-                         "eval": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_val.pkl",
+                         "eval": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_last22val.pkl",
                          #"eval": "/cvhci/data/activity/kpeng/logits_split2_chunk90_swin_base_last_logits768_lastval.pkl",
                          #"eval": "/cvhci/data/activity/kpeng/logits_split1_chunk90_swin_base_last_logits768_lastaugmentedval.pkl",
                          #"eval": "/cvhci/data/activity/kpeng/task_level_logits_split0_chunk90_swin_base_last_logits768_lastval.pkl",
                          #"test": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_last_ids2test.pkl",
                          #"eval": "/cvhci/data/activity/kpeng/object_level_logits_split2_chunk90_swin_base_last_logits768_lastval.pkl",
                          #"eval": "/cvhci/data/activity/kpeng/location_level_logits_split1_chunk90_swin_base_last_logits768_lastval.pkl",
-                         "test": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_test.pkl"
+                         "test": "/cvhci/data/activity/kpeng/logits_split0_chunk90_swin_base_last_logits768_last22test.pkl"
                          #"test":  "/cvhci/data/activity/kpeng/logits_split1_chunk90_swin_base_last_logits768_lastaugmentedtest.pkl"
                          #"test": "/cvhci/data/activity/kpeng/task_level_logits_split0_chunk90_swin_base_last_logits768_lasttest.pkl"
                          #"test": "/cvhci/data/activity/kpeng/object_level_logits_split2_chunk90_swin_base_last_logits768_lasttest.pkl",
