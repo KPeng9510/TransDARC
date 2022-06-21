@@ -112,9 +112,11 @@ The logits of Video Swin Base are available at https://drive.google.com/drive/fo
 
 ## Please cite our paper once you are interested in it
 
+
 @article{peng2022transdarc,
   title={TransDARC: Transformer-based Driver Activity Recognition with Latent Space Feature Calibration},
   author={Peng, Kunyu and Roitberg, Alina and Yang, Kailun and Zhang, Jiaming and Stiefelhagen, Rainer},
   journal={arXiv preprint arXiv:2203.00927},
   year={2022}
 }
+
