@@ -1,5 +1,7 @@
 # TransDARC (ReadME in progress)
 
+## News
+**TransDARC** [[**PDF**](https://arxiv.org/pdf/2203.00927.pdf)] is accepted to **IROS2022**.
 
 ## Extract and save features
 Please first train the video feature extraction backbone from video swin transformer in mmaction2 repo using drive and act dataset, 
@@ -112,11 +114,12 @@ The logits of Video Swin Base are available at https://drive.google.com/drive/fo
 
 ## Please cite our paper once you are interested in it
 
-
+```
 @article{peng2022transdarc,
   title={TransDARC: Transformer-based Driver Activity Recognition with Latent Space Feature Calibration},
   author={Peng, Kunyu and Roitberg, Alina and Yang, Kailun and Zhang, Jiaming and Stiefelhagen, Rainer},
-  journal={arXiv preprint arXiv:2203.00927},
+  journal={2022 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
   year={2022}
 }
+```
 
