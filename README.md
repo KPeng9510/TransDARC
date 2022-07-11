@@ -1,4 +1,4 @@
-# TransDARC (IROS 2022, ReadME in progress)
+# TransDARC (ReadME in progress)
 
 ## News
 **TransDARC** [[**PDF**](https://arxiv.org/pdf/2203.00927.pdf)] is accepted to **IROS2022**.
@@ -112,7 +112,7 @@ python evaluate_DC.py
 The logits of Video Swin Base are available at https://drive.google.com/drive/folders/1MJY8toH3PSV--pA2EvL8qjPIjcaTdmvr?usp=sharing, which is for fine-grained level split 0 driver activity recognition. (notice that, the result reported in the paper is the mean average over three splits, i.e., split0, split1, and split2)
 
 
-## Please consider citing our [[**paper**](https://arxiv.org/pdf/2203.00927.pdf)] once you are interested in it:
+## Please consider citing our [[paper](https://arxiv.org/pdf/2203.00927.pdf)] once you are interested in it:
 
 ```
 @article{peng2022transdarc,
