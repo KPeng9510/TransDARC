@@ -355,7 +355,7 @@ if __name__ == '__main__':
     #print(np.min(Y_aug))
     #sys.exit()
     #criterion2 = torch.nn.CosineEmbeddingLoss(margin=0.0, size_average=None, reduce=False,)
-    for epoch in range(3000):
+    for epoch in range(1500):
         hard_samples = []
         model.train()
         for step, (data,label) in enumerate(train_dataloader):
