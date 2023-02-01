@@ -111,6 +111,7 @@ python evaluate_DC.py
 
 The logits of Video Swin Base are available at https://drive.google.com/drive/folders/1MJY8toH3PSV--pA2EvL8qjPIjcaTdmvr?usp=sharing, which is for fine-grained level split 0 driver activity recognition. (notice that, the result reported in the paper is the mean average over three splits, i.e., split0, split1, and split2)
 
+Please note that the performance is evaluated unfortunately differently by using unbalanced mean average Top-1 accuracy. Under balanced accuracy our model can still achieve 71.0 accuracy for fine-grained activity recognition on the test set. In case you want to compare with us, you could either evaluate following the same way our paper use and compare with TransDARC, or contact my email to get more results for the other tasks considering balanced accuracy evaluation. Thanks!
 
 ## Please consider citing our paper once you are interested in it. [[**PDF**](https://arxiv.org/pdf/2203.00927.pdf)]
 
